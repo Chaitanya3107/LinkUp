@@ -1,7 +1,10 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:link_up/main.dart';
+import 'package:link_up/models/chatDataModel.dart';
+import 'package:link_up/models/messageModel.dart';
 import 'package:link_up/models/userDataModel.dart';
+import 'package:link_up/stateManagement/chatProvider.dart';
 import 'package:link_up/stateManagement/userDataProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -10,12 +13,37 @@ Client client =
 
 const String db = "673f89d6003467f7148c";
 const String userCollection = "673f89fa0024f67a7ae5";
+const String chatCollection = "674042de0007fc76a91e";
 const String storageBucket = "673f8b5b0012443f5422";
 
 // initialise our database and account and storage
 Account account = Account(client);
 final Databases databases = Databases(client);
 final Storage storage = Storage(client);
+final Realtime realtime = Realtime(client);
+
+RealtimeSubscription? subscription;
+// to susbcribe to realtime changes
+susbscribeToRealtime({required String userId}) {
+  subscription = realtime.subscribe([
+    "databases.$db.collections.$chatCollection.documents",
+    "databases.$db.collections.$userCollection.documents",
+  ]);
+  print("Subscribing to realtime");
+  subscription!.stream.listen((data) {
+    print("some event happened");
+    // print(data.events);
+    // print(data.payload);
+    final firstItem = data.events[0].split(".");
+    final eventType = firstItem[firstItem.length - 1];
+    print("event type is $eventType");
+    if (eventType == "create") {
+      Provider.of<ChatProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadChats(userId);
+    }
+  });
+}
 
 // save phone number to database (while creating a new account)
 Future<bool> savePhonetoDb(
@@ -223,5 +251,145 @@ Future<DocumentList> searchUsers({
   } catch (e) {
     print("Error searching users: $e");
     return DocumentList(total: 0, documents: []); // Return empty list on error
+  }
+}
+
+// create a new chat and save to database
+// Future<String?> createNewChat({
+//   required String message,
+//   required String senderId,
+//   required String receiverId,
+//   required bool isImage,
+// }) async {
+//   try {
+//     // Create the new message document in the database
+//     final msg = await databases.createDocument(
+//       databaseId: db,
+//       collectionId: chatCollection,
+//       documentId: ID.unique(),
+//       data: {
+//         "message": message,
+//         "senderId": senderId,
+//         "receiverId": receiverId,
+//         "timestamp": DateTime.now().toIso8601String(),
+//         "isSeenByReceiver": false,
+//         "isImage": isImage,
+//         "userData": [senderId, receiverId],
+//       },
+//     );
+
+//     // Return the documentId (which is the messageId)
+//     print("Message sent with messageId: ${msg.$id}");
+//     return msg.$id; // Return the unique messageId
+//   } catch (e) {
+//     print("Failed to send message $e");
+//     return null; // Return null if the message could not be sent
+//   }
+// }
+Future<String?> createNewChat({
+  required String message,
+  required String senderId,
+  required String receiverId,
+  required bool isImage,
+}) async {
+  try {
+    // Create the new message document in the database
+    final msg = await databases.createDocument(
+      databaseId: db,
+      collectionId: chatCollection,
+      documentId: ID.unique(),
+      data: {
+        "message": message,
+        "senderId": senderId,
+        "receiverId": receiverId,
+        "timestamp": DateTime.now().toIso8601String(),
+        "isSeenByReceiver": false,
+        "isImage": isImage,
+        "userData": [senderId, receiverId],
+      },
+    );
+
+    // Now update the document with the messageId (same as the document ID)
+    await databases.updateDocument(
+      databaseId: db,
+      collectionId: chatCollection,
+      documentId: msg.$id, // The unique document ID (messageId)
+      data: {
+        "messageId": msg.$id, // Save messageId in the document
+      },
+    );
+
+    // Return the documentId (which is the messageId)
+    print("Message sent with messageId: ${msg.$id}");
+    return msg.$id; // Return the unique messageId
+  } catch (e) {
+    print("Failed to send message $e");
+    return null; // Return null if the message could not be sent
+  }
+}
+
+//function to delete chat from database
+Future deleteCurrentUserChat({required String chatId}) async {
+  try {
+    await databases.deleteDocument(
+        databaseId: db, collectionId: chatCollection, documentId: chatId);
+  } catch (e) {
+    print("Error deleting chat: $e");
+  }
+}
+
+Future<Map<String, List<ChatDataModel>>?> currentUserChats(
+    String userId) async {
+  try {
+    var results = await databases.listDocuments(
+      databaseId: db,
+      collectionId: chatCollection,
+      queries: [
+        Query.or([
+          Query.equal("senderId", userId),
+          Query.equal("receiverId", userId),
+        ]),
+        Query.orderDesc("timestamp"),
+      ],
+    );
+
+    final DocumentList chatDocuments = results;
+
+    print(
+        "Chat documents ${chatDocuments.total} and documents ${chatDocuments.documents.length}");
+
+    // output returned will be in the form of a map
+    Map<String, List<ChatDataModel>> chats = {};
+
+    // Iterate through the documents, not check if it's empty
+    for (var doc in chatDocuments.documents) {
+      String sender = doc.data["senderId"];
+      String receiver = doc.data["receiverId"];
+
+      // Create MessageModel from the document data
+      MessageModel message = MessageModel.fromMap(doc.data);
+
+      // Get the user data
+      List<UserData> users = [];
+      for (var user in doc.data["userData"]) {
+        users.add(UserData.toMap(user));
+      }
+
+      // Determine the chat key (sender or receiver)
+      String key = (sender == userId) ? receiver : sender;
+
+      // Add the message to the appropriate chat
+      if (chats[key] == null) {
+        chats[key] = [];
+      }
+      chats[key]!.add(ChatDataModel(message: message, users: users));
+    }
+
+    print("Message read successfully");
+    // print(chats);
+    return chats;
+  } catch (e) {
+    print("Error in reading current user chat: $e");
+    return null;
   }
 }

@@ -2,6 +2,7 @@ import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
 import 'package:link_up/Constant/colors.dart';
 import 'package:link_up/Controllers/appwrite_controllers.dart';
+import 'package:link_up/models/userDataModel.dart';
 import 'package:link_up/stateManagement/userDataProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -85,6 +86,11 @@ class _SearchUserState extends State<SearchUser> {
                   itemCount: searchedUsers.documents.length,
                   itemBuilder: (context, index) {
                     return ListTile(
+                      onTap: () {
+                        Navigator.pushNamed(context, "/chat",
+                            arguments: UserData.toMap(
+                                searchedUsers.documents[index].data));
+                      },
                       leading: CircleAvatar(
                         backgroundImage: searchedUsers
                                         .documents[index].data["profile_pic"] !=
@@ -93,7 +99,7 @@ class _SearchUserState extends State<SearchUser> {
                                         .documents[index].data["profile_pic"] !=
                                     ""
                             ? NetworkImage(
-                                "https://cloud.appwrite.io/v1/storage/buckets/6734a9e6001d1fdfcd40/files/${searchedUsers.documents[index].data["profile_pic"]}/view?project=672f97300029edc97fc9&project=672f97300029edc97fc9&mode=admin")
+                                "https://cloud.appwrite.io/v1/storage/buckets/673f8b5b0012443f5422/files/${searchedUsers.documents[index].data["profile_pic"]}/view?project=673f893e0039487ed031&project=673f893e0039487ed031&mode=admin")
                             : const Image(image: AssetImage("assets/user.png"))
                                 .image,
                       ),

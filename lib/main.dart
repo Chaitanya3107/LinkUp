@@ -8,6 +8,7 @@ import 'package:link_up/pages/home/searchUser.dart';
 import 'package:link_up/pages/loginPage/phone_login.dart';
 import 'package:link_up/pages/profilePage/profilePage.dart';
 import 'package:link_up/pages/profilePage/updateProfilePage.dart';
+import 'package:link_up/stateManagement/chatProvider.dart';
 import 'package:link_up/stateManagement/userDataProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -27,11 +28,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => UserDataProvider())
+        ChangeNotifierProvider(create: (context) => UserDataProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
-        title: 'Flutter Demo',
+        title: 'LinkUp',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
