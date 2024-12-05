@@ -1,4 +1,4 @@
-# link_up
+# LinkUp
 
 A new Flutter project.
 
