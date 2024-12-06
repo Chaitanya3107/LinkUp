@@ -50,6 +50,11 @@ class _ProfilepageState extends State<Profilepage> {
               ListTile(
                 onTap: () async {
                   await LocalSavedData.clearAllData();
+                  updateOnlineStatus(
+                      status: false,
+                      userId:
+                          Provider.of<UserDataProvider>(context, listen: false)
+                              .getUserId);
                   await logoutUser();
                   Navigator.pushNamedAndRemoveUntil(
                       context, "/login", (route) => false);

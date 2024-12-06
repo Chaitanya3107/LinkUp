@@ -41,6 +41,14 @@ susbscribeToRealtime({required String userId}) {
       Provider.of<ChatProvider>(navigatorKey.currentState!.context,
               listen: false)
           .loadChats(userId);
+    } else if (eventType == "update") {
+      Provider.of<ChatProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadChats(userId);
+    } else if (eventType == "delete") {
+      Provider.of<ChatProvider>(navigatorKey.currentState!.context,
+              listen: false)
+          .loadChats(userId);
     }
   });
 }
@@ -254,38 +262,6 @@ Future<DocumentList> searchUsers({
   }
 }
 
-// create a new chat and save to database
-// Future<String?> createNewChat({
-//   required String message,
-//   required String senderId,
-//   required String receiverId,
-//   required bool isImage,
-// }) async {
-//   try {
-//     // Create the new message document in the database
-//     final msg = await databases.createDocument(
-//       databaseId: db,
-//       collectionId: chatCollection,
-//       documentId: ID.unique(),
-//       data: {
-//         "message": message,
-//         "senderId": senderId,
-//         "receiverId": receiverId,
-//         "timestamp": DateTime.now().toIso8601String(),
-//         "isSeenByReceiver": false,
-//         "isImage": isImage,
-//         "userData": [senderId, receiverId],
-//       },
-//     );
-
-//     // Return the documentId (which is the messageId)
-//     print("Message sent with messageId: ${msg.$id}");
-//     return msg.$id; // Return the unique messageId
-//   } catch (e) {
-//     print("Failed to send message $e");
-//     return null; // Return null if the message could not be sent
-//   }
-// }
 Future<String?> createNewChat({
   required String message,
   required String senderId,
@@ -335,6 +311,20 @@ Future deleteCurrentUserChat({required String chatId}) async {
         databaseId: db, collectionId: chatCollection, documentId: chatId);
   } catch (e) {
     print("Error deleting chat: $e");
+  }
+}
+
+// edit our chat messages and update in database
+Future editChat({required String chatId, required String message}) async {
+  try {
+    await databases.updateDocument(
+        databaseId: db,
+        collectionId: chatCollection,
+        documentId: chatId,
+        data: {"message": message});
+    print("Message updated");
+  } catch (e) {
+    print("Error editing chat: $e");
   }
 }
 
@@ -391,5 +381,38 @@ Future<Map<String, List<ChatDataModel>>?> currentUserChats(
   } catch (e) {
     print("Error in reading current user chat: $e");
     return null;
+  }
+}
+
+// to update isSeen message status
+Future updateIsSeen({required List<String> chatIds}) async {
+  try {
+    for (var chatid in chatIds) {
+      await databases.updateDocument(
+          databaseId: db,
+          collectionId: chatCollection,
+          documentId: chatid,
+          data: {"isSeenByReceiver": true});
+      print("message is seen");
+    }
+  } catch (e) {
+    print("Error in updating isSeen message status: $e");
+  }
+}
+
+// to update online status
+Future updateOnlineStatus(
+    {required bool status, required String userId}) async {
+  try {
+    // print("document id is $userId");
+    await databases.updateDocument(
+        databaseId: db,
+        collectionId: userCollection,
+        documentId: userId,
+        data: {"isOnline": status});
+    print("updated online status $status");
+  } catch (e) {
+    print("document id is $userId");
+    print("Error in updating online status: $e");
   }
 }

@@ -78,6 +78,7 @@ class _ChatPageState extends State<ChatPage> {
   ];
 
   TextEditingController messageController = TextEditingController();
+  TextEditingController editMessageController = TextEditingController();
   late String currentUserId;
   late String currentUserName;
 
@@ -147,6 +148,26 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context, value, child) {
         // getAllChats return map of user name, receiver name and list of chats(receiver.userId)
         final userAndOtherChats = value.getAllChats[receiver.userId] ?? [];
+
+        bool? otherUserOnline = userAndOtherChats.isNotEmpty
+            ? userAndOtherChats[0].users[0].userId == receiver.userId
+                ? userAndOtherChats[0].users[0].isOnline
+                : userAndOtherChats[0].users[1].isOnline
+            : false;
+
+        // list of message received to current user
+        List<String> receiveMsgList = [];
+        for (var chat in userAndOtherChats) {
+          // current user is receiver
+          if (chat.message.receiver == currentUserId) {
+            if (chat.message.isSeenByReceiver == false) {
+              receiveMsgList.add(chat.message.messageId!);
+            }
+          }
+        }
+
+        updateIsSeen(chatIds: receiveMsgList);
+
         return Scaffold(
           backgroundColor: kBackgroundColor,
           appBar: AppBar(
@@ -175,7 +196,7 @@ class _ChatPageState extends State<ChatPage> {
                           fontWeight: FontWeight.w600),
                     ),
                     Text(
-                      userAndOtherChats == true ? "Online" : "Offline",
+                      otherUserOnline == true ? "Online" : "Offline",
                       style: TextStyle(
                           fontSize: screenWidth * 0.035,
                           fontWeight: FontWeight.w500),
@@ -222,9 +243,51 @@ class _ChatPageState extends State<ChatPage> {
                                             Navigator.pop(context);
                                           },
                                           child: const Text("Cancel")),
-                                      TextButton(
-                                          onPressed: () {},
-                                          child: const Text("Edit")),
+                                      msg.sender == currentUserId
+                                          ? TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                editMessageController.text =
+                                                    msg.message;
+                                                showDialog(
+                                                    context: context,
+                                                    builder: (context) =>
+                                                        AlertDialog(
+                                                          title: const Text(
+                                                              "Edit this message"),
+                                                          content: TextFormField(
+                                                              controller:
+                                                                  editMessageController,
+                                                              maxLines: 10),
+                                                          actions: [
+                                                            TextButton(
+                                                                onPressed: () {
+                                                                  editChat(
+                                                                      chatId: msg
+                                                                          .messageId!,
+                                                                      message:
+                                                                          editMessageController
+                                                                              .text);
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                  editMessageController
+                                                                      .text = "";
+                                                                },
+                                                                child:
+                                                                    const Text(
+                                                                        "Ok")),
+                                                            TextButton(
+                                                                onPressed: () {
+                                                                  Navigator.pop(
+                                                                      context);
+                                                                },
+                                                                child: const Text(
+                                                                    "Cancel"))
+                                                          ],
+                                                        ));
+                                              },
+                                              child: const Text("Edit"))
+                                          : const SizedBox(),
                                       msg.sender == currentUserId
                                           ? TextButton(
                                               onPressed: () {
@@ -234,9 +297,7 @@ class _ChatPageState extends State<ChatPage> {
                                                         context,
                                                         listen: false)
                                                     .deleteMessage(
-                                                        msg,
-                                                        currentUserId,
-                                                        msg.message);
+                                                        msg, currentUserId);
                                                 Navigator.pop(context);
                                               },
                                               child: const Text("Delete"))

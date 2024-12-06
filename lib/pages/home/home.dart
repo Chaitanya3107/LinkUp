@@ -25,6 +25,8 @@ class _HomePageState extends State<HomePage> {
     currentUserId =
         Provider.of<UserDataProvider>(context, listen: false).getUserId;
     Provider.of<ChatProvider>(context, listen: false).loadChats(currentUserId);
+    // when user load home screen, status turns true
+    updateOnlineStatus(status: true, userId: currentUserId);
     susbscribeToRealtime(userId: currentUserId);
   }
 
@@ -116,7 +118,10 @@ class _HomePageState extends State<HomePage> {
                         right: 0,
                         bottom: 0,
                         child: CircleAvatar(
-                          backgroundColor: Colors.green,
+                          // storing user data in otheUser
+                          backgroundColor: otherUser.isOnline == true
+                              ? Colors.green
+                              : Colors.grey.shade600,
                           radius: screenWidth * 0.013,
                         ),
                       ),

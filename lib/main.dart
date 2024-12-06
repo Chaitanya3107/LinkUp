@@ -14,8 +14,43 @@ import 'package:provider/provider.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
+class LifecycleEventHandler extends WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // when context is not available then use navigatorKey.currentState!.context
+    String currentUserId = Provider.of<UserDataProvider>(
+            navigatorKey.currentState!.context,
+            listen: false)
+        .getUserId;
+    super.didChangeAppLifecycleState(state);
+    // 5 app life cycle state  resumed, paused, inactive, detached, hidden
+    switch (state) {
+      case AppLifecycleState.resumed:
+        updateOnlineStatus(status: true, userId: currentUserId);
+        print("App resumed");
+        break;
+      case AppLifecycleState.inactive:
+        updateOnlineStatus(status: false, userId: currentUserId);
+        print("App inactive");
+        break;
+      case AppLifecycleState.paused:
+        updateOnlineStatus(status: false, userId: currentUserId);
+        print("App paused");
+        break;
+      case AppLifecycleState.detached:
+        updateOnlineStatus(status: false, userId: currentUserId);
+        print("App detached");
+        break;
+      case AppLifecycleState.hidden:
+        updateOnlineStatus(status: false, userId: currentUserId);
+        print("App hidden");
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding.instance.addObserver(LifecycleEventHandler());
   await LocalSavedData().init();
   runApp(const MyApp());
 }

@@ -98,8 +98,7 @@ class ChatProvider extends ChangeNotifier {
 //   }
 // }
 
-  Future<void> deleteMessage(
-      MessageModel message, String currentUser, String? imageId) async {
+  Future<void> deleteMessage(MessageModel message, String currentUser) async {
     try {
       // Check if the sender is the current user
       if (message.sender == currentUser) {
@@ -113,8 +112,8 @@ class ChatProvider extends ChangeNotifier {
               ?.removeWhere((element) => element.message == message);
 
           // If there's an image to delete, delete it from the bucket
-          if (imageId != null) {
-            await deleteImagefromBucket(oldImageId: imageId);
+          if (message.isImage == true) {
+            await deleteImagefromBucket(oldImageId: message.message);
             notifyListeners();
             print("image deleted from bucket");
           }
