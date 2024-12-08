@@ -46,9 +46,10 @@ class _ChatMessageState extends State<ChatMessage> {
                       borderRadius: BorderRadius.circular(50),
                       child: CachedNetworkImage(
                         imageUrl:
-                            "https://imgs.search.brave.com/STZgWQkzkzGYG0Ix9W6c54SaifBRzwKCyTBlTbmg_Ko/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/c3BvcnRwaG90b2dh/bGxlcnkuY29tL2Nv/bnRlbnQvaW1hZ2Vz/L2Ntc2ZpbGVzL3By/b2R1Y3QvNTI3Mi81/MjcyLWxpc3QuanBn",
+                            "https://cloud.appwrite.io/v1/storage/buckets/673f8b5b0012443f5422/files/${widget.msg.message}/view?project=673f893e0039487ed031&project=673f893e0039487ed031&mode=admin",
                         height: 200,
                         width: 200,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:appwrite/appwrite.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:link_up/Constant/chatMessage.dart';
 import 'package:link_up/Constant/colors.dart';
@@ -17,70 +20,11 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List messages = [
-    MessageModel(
-        message: "Hello",
-        sender: "101",
-        receiver: "202",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message: "Hi",
-        sender: "202",
-        receiver: "101",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message: "Kaisa hai bhai",
-        sender: "101",
-        receiver: "202",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message: "Mai thik, tu kaisa hai",
-        sender: "202",
-        receiver: "101",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message:
-            "Bas mast yarr, aur bata kya chalra aaj kal,phone wagera ni karta",
-        sender: "101",
-        receiver: "202",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message: "kuch ni chalra bhai",
-        sender: "202",
-        receiver: "101",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: false),
-    MessageModel(
-        message: "Thik hai bhai chala le phir kuch aur photo bej",
-        sender: "101",
-        receiver: "202",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: false,
-        isImage: true),
-    MessageModel(
-        message: "le bhai",
-        sender: "202",
-        receiver: "101",
-        timestamp: DateTime(2024, 11, 1),
-        isSeenByReceiver: true,
-        isImage: true),
-  ];
-
   TextEditingController messageController = TextEditingController();
   TextEditingController editMessageController = TextEditingController();
   late String currentUserId;
   late String currentUserName;
+  FilePickerResult? _filePickerResult;
 
   @override
   void initState() {
@@ -90,6 +34,60 @@ class _ChatPageState extends State<ChatPage> {
         Provider.of<UserDataProvider>(context, listen: false).getUserName;
     Provider.of<ChatProvider>(context, listen: false).loadChats(currentUserId);
     super.initState();
+  }
+
+  // to open file picker
+  void _openFilePicker(UserData receiver) async {
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(allowMultiple: true, type: FileType.image);
+    setState(() {
+      _filePickerResult = result;
+      uploadAllImage(receiver);
+    });
+  }
+
+  // to upload files to our storage bucket and our database
+  void uploadAllImage(UserData receiver) async {
+    if (_filePickerResult != null) {
+      // loop for multiple files
+      _filePickerResult!.paths.forEach((path) {
+        if (path != null) {
+          var file = File(path);
+          final fileByte = file.readAsBytesSync();
+          final inputFile = InputFile.fromBytes(
+              bytes: fileByte, filename: file.path.split("/").last);
+
+          // saving image to our storage bucket
+          saveImageBucket(image: inputFile).then((imageId) {
+            if (imageId != null) {
+              createNewChat(
+                      message: imageId,
+                      senderId: currentUserId,
+                      receiverId: receiver.userId,
+                      isImage: true)
+                  .then((value) {
+                // after new chat is created , updating it in provider
+                if (value != null) {
+                  // message will be in the form of message model
+                  Provider.of<ChatProvider>(context, listen: false).addMessage(
+                      MessageModel(
+                          message: imageId,
+                          sender: currentUserId,
+                          receiver: receiver.userId,
+                          timestamp: DateTime.now(),
+                          isImage: true,
+                          isSeenByReceiver: false),
+                      currentUserId,
+                      [UserData(phone: "", userId: currentUserId), receiver]);
+                }
+              });
+            }
+          });
+        }
+      });
+    } else {
+      print("File pick cancel by user");
+    }
   }
 
   void _sendMessage({required UserData receiver}) {
@@ -227,7 +225,7 @@ class _ChatPageState extends State<ChatPage> {
                               builder: (context) => AlertDialog(
                                     title: msg.isImage == true
                                         ? const Text(
-                                            "Choose what you want to do with tis image")
+                                            "Choose what you want to do with this image")
                                         : Text(
                                             "${msg.message.length > 20 ? msg.message.substring(0, 20) : msg.message}..."),
                                     content: msg.isImage == true
@@ -291,8 +289,8 @@ class _ChatPageState extends State<ChatPage> {
                                       msg.sender == currentUserId
                                           ? TextButton(
                                               onPressed: () {
-                                                print("Message id is ");
-                                                print(msg.messageId);
+                                                print(
+                                                    "Message id is ${msg.messageId} ");
                                                 Provider.of<ChatProvider>(
                                                         context,
                                                         listen: false)
@@ -332,7 +330,11 @@ class _ChatPageState extends State<ChatPage> {
                           border: InputBorder.none,
                           hintText: "Type a message..."),
                     )),
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.image)),
+                    IconButton(
+                        onPressed: () {
+                          _openFilePicker(receiver);
+                        },
+                        icon: const Icon(Icons.image)),
                     IconButton(
                         onPressed: () {
                           _sendMessage(receiver: receiver);
