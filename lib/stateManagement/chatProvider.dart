@@ -17,6 +17,7 @@ class ChatProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Load chats for the current user
+  // limiting requests send to appwrite server to manage all requests
   void loadChats(String currentUser) async {
     print("Current user id is");
     print(currentUser);
@@ -71,32 +72,6 @@ class ChatProvider extends ChangeNotifier {
       print("error in chatProvider on message adding");
     }
   }
-
-  // delete message from the chats data
-//   void deleteMessage(
-//       MessageModel message, String currentUser, String? imageId) async {
-//     try {
-//       // user is deleting the message
-//       if (message.sender == currentUser) {
-//         _chats[message.receiver]!
-//             .removeWhere((element) => element.message == message);
-//         if (imageId != null) {
-//           deleteImagefromBucket(oldImageId: imageId);
-//           print("image deleted from bucket");
-//         }
-//         //chatId is inside message.messageId
-//         deleteCurrentUserChat(chatId: message.messageId!);
-//       } else {
-//         // current user is receiver, only delete message from list
-//         _chats[message.sender]!
-//             .removeWhere((element) => element.message == message);
-//         print("message deleted");
-//       }
-//     } catch (e) {
-//       print("error in chatProvider on message deleting $e");
-//     }
-//   }
-// }
 
   Future<void> deleteMessage(MessageModel message, String currentUser) async {
     try {

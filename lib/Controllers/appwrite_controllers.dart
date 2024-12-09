@@ -328,6 +328,7 @@ Future editChat({required String chatId, required String message}) async {
   }
 }
 
+// to list all the chats belonging to current user
 Future<Map<String, List<ChatDataModel>>?> currentUserChats(
     String userId) async {
   try {
@@ -340,6 +341,7 @@ Future<Map<String, List<ChatDataModel>>?> currentUserChats(
           Query.equal("receiverId", userId),
         ]),
         Query.orderDesc("timestamp"),
+        Query.limit(2000)
       ],
     );
 
